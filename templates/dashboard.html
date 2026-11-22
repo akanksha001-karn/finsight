@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Dashboard</h1><p class="muted">Overview for {{ month|month_label }}</p></div>
+  <a class="btn btn-primary" href="{{ url_for('add_transaction') }}">+ Add transaction</a>
+</div>
+
+<section class="cards">
+  <div class="card stat"><span class="label">Income</span><span class="value green">{{ cur.income|inr }}</span></div>
+  <div class="card stat"><span class="label">Expenses</span><span class="value red">{{ cur.expense|inr }}</span></div>
+  <div class="card stat"><span class="label">Savings</span><span class="value {{ 'green' if cur.savings >= 0 else 'red' }}">{{ cur.savings|inr }}</span></div>
+  <div class="card stat"><span class="label">Savings rate</span><span class="value blue">{{ '%.0f'|format(rate) }}%</span></div>
+</section>
+
+<section class="grid-2">
+  <div class="card"><h3>Income vs Expense (last 6 months)</h3><canvas id="barChart"></canvas><div id="barChart-legend" class="legend"></div></div>
+  <div class="card"><h3>Spending by category · {{ month|month_label }}</h3><canvas id="pieChart"></canvas><div id="pieChart-legend" class="legend"></div></div>
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h3>Recent transactions</h3>
+    {% if recent %}
+    <table class="table">
+      {% for t in recent %}
+      <tr><td>{{ t.date }}</td><td>{{ t.description or t.category }}<br><small class="muted">{{ t.category }}</small></td>
+        <td class="num {{ 'green' if t.type == 'income' else 'red' }}">{{ '+' if t.type == 'income' else '-' }}{{ t.amount|inr }}</td></tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="muted">No transactions yet. Add your first one!</p>{% endif %}
+  </div>
+  <div class="card">
+    <h3>Budget alerts</h3>
+    {% for b in budget_status %}
+      <div class="budget-row"><div class="row-between"><span>{{ b.category }}</span><span>{{ b.spent|inr }} / {{ b.limit|inr }}</span></div>
+      <div class="bar"><div class="fill {{ b.state }}" style="width: {{ [b.percent, 100]|min }}%"></div></div></div>
+    {% else %}<p class="muted">No budgets set. <a href="{{ url_for('budgets') }}">Set a budget</a> to get alerts.</p>{% endfor %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+const D = {{ chart|tojson }};
+barChart("barChart", D.months, [{label: "Income", data: D.income, color: "#10b981"}, {label: "Expense", data: D.expense, color: "#ef4444"}]);
+doughnutChart("pieChart", D.cat_labels, D.cat_values);
+</script>
+{% endblock %}

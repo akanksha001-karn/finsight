@@ -1,0 +1,5 @@
+# Only needed to re-generate the PDF report (python report/generate_report.py)
+-r requirements.txt
+reportlab>=4.0
+matplotlib>=3.8
+Pillow>=10.0

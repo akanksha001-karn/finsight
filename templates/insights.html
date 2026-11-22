@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Insights{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Savings Prediction &amp; Insights</h1>
+  <p class="muted">Machine-learning forecast based on your spending pattern</p></div></div>
+{% if not pred %}
+  <div class="card"><p>Add a few transactions (ideally 3+ months) to unlock predictions.</p></div>
+{% else %}
+<section class="cards">
+  <div class="card stat"><span class="label">Forecast month</span><span class="value">{{ pred.target_month|month_label }}</span></div>
+  <div class="card stat"><span class="label">Predicted income</span><span class="value green">{{ pred.predicted_income|round|int|inr }}</span></div>
+  <div class="card stat"><span class="label">Predicted expense</span><span class="value red">{{ pred.predicted_expense|round|int|inr }}</span></div>
+  <div class="card stat"><span class="label">Predicted savings</span><span class="value {{ 'green' if pred.predicted_savings >= 0 else 'red' }}">{{ pred.predicted_savings|round|int|inr }}</span>
+    <small class="muted">{{ '%.0f'|format(pred.predicted_savings_rate) }}% of income</small></div>
+</section>
+
+<section class="grid-2">
+  <div class="card"><h3>Trend &amp; forecast</h3><canvas id="trend"></canvas><div id="trend-legend" class="legend"></div>
+    <p class="muted small">Model: {{ pred.method }} on {{ pred.months_used|length }} month(s) · confidence <b>{{ pred.confidence }}</b> (R² = {{ '%.2f'|format(pred.r2) }})</p></div>
+  <div class="card"><h3>Smart suggestions</h3>
+    {% for kind, text in advice.tips %}<div class="tip {{ kind }}">{{ text }}</div>{% endfor %}
+    <div class="tip good"><b>Ideal savings (20% rule):</b> {{ advice.ideal_savings|round|int|inr }} per month.</div>
+  </div>
+</section>
+
+<div class="card"><h3>Category-wise expense forecast</h3>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Category</th><th class="num">Last month</th><th class="num">Average</th><th class="num">Predicted</th><th class="num">Trend</th></tr></thead>
+    {% for c in cats %}<tr><td>{{ c.category }}</td><td class="num">{{ c.last_month|round|int|inr }}</td><td class="num">{{ c.average|round|int|inr }}</td>
+      <td class="num"><b>{{ c.predicted|round|int|inr }}</b></td>
+      <td class="num">{% if c.growth is none %}—{% else %}<span class="{{ 'red' if c.growth > 5 else 'green' if c.growth < -5 else 'muted' }}">{{ '▲' if c.growth > 0 else '▼' }} {{ '%.0f'|format(c.growth|abs) }}%</span>{% endif %}</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if chart %}<script>
+const D = {{ chart|tojson }};
+lineChart("trend", D.labels, [
+  {label: "Expense", data: D.expense, color: "#ef4444"},
+  {label: "Income", data: D.income, color: "#10b981"},
+  {label: "Expense forecast", data: D.f_expense, color: "#ef4444", dashed: true},
+  {label: "Income forecast", data: D.f_income, color: "#10b981", dashed: true}
+]);
+</script>{% endif %}
+{% endblock %}

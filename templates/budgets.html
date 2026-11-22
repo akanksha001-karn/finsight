@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Budgets{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Budgets</h1><p class="muted">Monthly limits per category · {{ month|month_label }}</p></div></div>
+<section class="grid-2">
+  <form method="post" class="card form">
+    <h3>Set / update a budget</h3>
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <label>Category<select name="category">{% for c in categories %}<option>{{ c }}</option>{% endfor %}</select></label>
+    <label>Monthly limit (₹)<input type="number" name="limit" min="1" step="1" required></label>
+    <button class="btn btn-primary" type="submit">Save budget</button>
+  </form>
+  <div class="card">
+    <h3>Progress</h3>
+    {% for b in status %}
+    <div class="budget-row">
+      <div class="row-between"><span><b>{{ b.category }}</b></span><span>{{ b.spent|inr }} / {{ b.limit|inr }} ({{ '%.0f'|format(b.percent) }}%)</span></div>
+      <div class="bar"><div class="fill {{ b.state }}" style="width: {{ [b.percent, 100]|min }}%"></div></div>
+      <form method="post" class="inline"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="category" value="{{ b.category }}"><input type="hidden" name="action" value="delete">
+        <button class="link-btn" type="submit">remove</button></form>
+    </div>
+    {% else %}<p class="muted">No budgets yet.</p>{% endfor %}
+  </div>
+</section>
+{% endblock %}

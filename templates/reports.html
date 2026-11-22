@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Monthly Report{% endblock %}
+{% macro change(v, good_when_down=False) %}
+  {% if v is not none %}<small class="{{ 'green' if (v <= 0) == good_when_down else 'red' }}">{{ '▲' if v > 0 else '▼' }} {{ '%.1f'|format(v|abs) }}% vs last month</small>{% endif %}
+{% endmacro %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Monthly Report</h1><p class="muted">{{ month|month_label }}</p></div>
+  <form method="get" class="inline-form"><select name="month" onchange="this.form.submit()">
+    {% for m in months %}<option value="{{ m }}" {{ 'selected' if m == month }}>{{ m|month_label }}</option>{% endfor %}</select></form>
+</div>
+
+<section class="cards">
+  <div class="card stat"><span class="label">Total income</span><span class="value green">{{ cur.income|inr }}</span>{{ change(inc_change, False) }}</div>
+  <div class="card stat"><span class="label">Total expense</span><span class="value red">{{ cur.expense|inr }}</span>{{ change(exp_change, True) }}</div>
+  <div class="card stat"><span class="label">Net savings</span><span class="value {{ 'green' if cur.savings >= 0 else 'red' }}">{{ cur.savings|inr }}</span></div>
+  <div class="card stat"><span class="label">Savings rate</span><span class="value blue">{{ '%.0f'|format(rate) }}%</span></div>
+</section>
+
+<section class="grid-2">
+  <div class="card"><h3>Expense by category</h3>
+    {% for b in breakdown %}
+      <div class="budget-row"><div class="row-between"><span>{{ b.category }}</span><span>{{ b.amount|inr }} · {{ '%.0f'|format(b.percent) }}%</span></div>
+      <div class="bar"><div class="fill info" style="width: {{ b.percent }}%"></div></div></div>
+    {% else %}<p class="muted">No expenses this month.</p>{% endfor %}
+  </div>
+  <div class="card"><h3>Daily spending</h3><canvas id="dayChart"></canvas></div>
+</section>
+
+<section class="grid-2">
+  <div class="card"><h3>Top 5 expenses</h3>
+    <table class="table">{% for t in top %}
+      <tr><td>{{ t.date }}</td><td>{{ t.description or t.category }}<br><small class="muted">{{ t.category }}</small></td><td class="num red">{{ t.amount|inr }}</td></tr>
+    {% else %}<tr><td class="muted">Nothing to show.</td></tr>{% endfor %}</table>
+  </div>
+  <div class="card"><h3>Income sources</h3>
+    <table class="table">{% for b in income_breakdown %}
+      <tr><td>{{ b.category }}</td><td class="num green">{{ b.amount|inr }}</td><td class="num">{{ '%.0f'|format(b.percent) }}%</td></tr>
+    {% else %}<tr><td class="muted">No income recorded.</td></tr>{% endfor %}</table>
+    {% if anomalies %}<h3 class="mt">⚠️ Unusual expenses</h3>
+      {% for a in anomalies %}<p class="flash warn">{{ a.description or a.category }} ({{ a.amount|inr }}) is far above your usual {{ a.category }} spending (≈ {{ a.limit|round|int|inr }}).</p>{% endfor %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+const D = {{ chart|tojson }};
+barChart("dayChart", D.days, [{label: "Spent", data: D.values, color: "#4f46e5"}], {hideLegend: true, sparseLabels: true});
+</script>
+{% endblock %}

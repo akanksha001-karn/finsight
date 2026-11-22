@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block auth %}
+<form method="post" class="form">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <label>Full name<input type="text" name="name" required></label>
+  <label>Email<input type="email" name="email" required></label>
+  <label>Password (min 6 characters)<input type="password" name="password" minlength="6" required></label>
+  <button class="btn btn-primary" type="submit">Create account</button>
+</form>
+<p class="muted center">Already registered? <a href="{{ url_for('login') }}">Log in</a></p>
+{% endblock %}

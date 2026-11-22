@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Transactions{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Transactions</h1><p class="muted">Search, filter, edit or delete your records</p></div>
+  <div class="actions">
+    <a class="btn btn-light" href="{{ url_for('export_csv') }}">⬇ Export CSV</a>
+    <a class="btn btn-primary" href="{{ url_for('add_transaction') }}">+ Add</a>
+  </div>
+</div>
+
+<form class="card filters" method="get">
+  <select name="month"><option value="">All months</option>
+    {% for m in months %}<option value="{{ m }}" {{ 'selected' if f.get('month') == m }}>{{ m|month_label }}</option>{% endfor %}</select>
+  <select name="type"><option value="">Income &amp; Expense</option>
+    <option value="income" {{ 'selected' if f.get('type') == 'income' }}>Income</option>
+    <option value="expense" {{ 'selected' if f.get('type') == 'expense' }}>Expense</option></select>
+  <select name="category"><option value="">All categories</option>
+    {% for c in categories|unique %}<option {{ 'selected' if f.get('category') == c }}>{{ c }}</option>{% endfor %}</select>
+  <input type="text" name="q" placeholder="Search description" value="{{ f.get('q', '') }}">
+  <button class="btn btn-primary" type="submit">Filter</button>
+</form>
+
+<div class="card">
+  <p class="muted">Showing {{ rows|length }} records · Income <b class="green">{{ inc|inr }}</b> · Expense <b class="red">{{ exp|inr }}</b></p>
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th></th></tr></thead>
+    <tbody>
+    {% for t in rows %}
+      <tr><td>{{ t.date }}</td><td>{{ t.description or '—' }}</td><td><span class="pill {{ t.type }}">{{ t.category }}</span></td>
+        <td class="num {{ 'green' if t.type == 'income' else 'red' }}">{{ '+' if t.type == 'income' else '-' }}{{ t.amount|inr }}</td>
+        <td class="num">
+          <a class="btn btn-light btn-sm" href="{{ url_for('edit_transaction', tx_id=t.id) }}">Edit</a>
+          <form method="post" action="{{ url_for('delete_transaction', tx_id=t.id) }}" class="inline" onsubmit="return confirm('Delete this transaction?')">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+        </td></tr>
+    {% else %}<tr><td colspan="5" class="muted center">No transactions found.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}
